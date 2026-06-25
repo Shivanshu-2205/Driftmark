@@ -1,0 +1,92 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --crt-bg: #050805;
+  --crt-bg-elevated: #0a100a;
+  --phosphor: #39ff6a;
+  --phosphor-dim: #1f8f3e;
+  --phosphor-bright: #7fffa0;
+  --amber: #ffb627;
+  --danger: #ff4136;
+  --grid-line: rgba(57, 255, 106, 0.08);
+  --border-dim: rgba(57, 255, 106, 0.18);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  background: var(--crt-bg);
+  color: var(--phosphor);
+  font-family: 'JetBrains Mono', monospace;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+body {
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 28px 28px;
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.15) 0px,
+    rgba(0, 0, 0, 0.15) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  mix-blend-mode: multiply;
+}
+
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.985; }
+}
+body { animation: flicker 6s infinite; }
+
+.glow-text {
+  text-shadow: 0 0 4px var(--phosphor), 0 0 12px rgba(57, 255, 106, 0.4);
+}
+.glow-border {
+  box-shadow: 0 0 0 1px var(--border-dim), 0 0 16px rgba(57, 255, 106, 0.06);
+}
+.panel {
+  background: var(--crt-bg-elevated);
+  border: 1px solid var(--border-dim);
+  border-radius: 2px;
+}
+.scanner-sweep { position: relative; overflow: hidden; }
+.scanner-sweep::after {
+  content: "";
+  position: absolute;
+  top: 0; left: -100%;
+  width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(57,255,106,0.06), transparent);
+  animation: sweep 4s linear infinite;
+}
+@keyframes sweep { to { left: 150%; } }
+
+::selection { background: var(--phosphor-dim); color: #000; }
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--crt-bg); }
+::-webkit-scrollbar-thumb { background: var(--phosphor-dim); }
+
+.severity-none { color: var(--phosphor); }
+.severity-moderate { color: var(--amber); }
+.severity-severe { color: var(--danger); }
+
+.blink { animation: blink 1.2s steps(2, start) infinite; }
+@keyframes blink { to { visibility: hidden; } }
