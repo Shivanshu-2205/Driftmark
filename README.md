@@ -1,6 +1,6 @@
 # ▓ DRIFTWATCH // ML Observability Platform
 
-A full-stack, zero-config observability platform built to detect feature-level data drift, prediction drift, and concept shift in production ML models (using a credit-default classifier demonstration). 
+A full-stack, zero-config observability platform built to detect feature-level data drift, prediction drift, and concept shift in production ML models (using a credit-default classifier demonstration).
 
 Featuring a premium **phosphor green / retro CRT terminal aesthetic** that simulates monitor scanlines, screen flicker, and real-time radar scanner sweeps.
 
@@ -15,14 +15,14 @@ Featuring a premium **phosphor green / retro CRT terminal aesthetic** that simul
                                       │ (Ingest CSV Batch Logs)
                                       ▼
        ┌─────────────────────────────────────────────────────────────┐
-       │                       FastAPI Backend                       │
+       │              FastAPI Backend (JWT Auth Protected)           │
        └─────┬────────────────────────┬────────────────────────┬─────┘
              │                        │                        │
              ▼ (Store Runs & Alerts)  ▼ (Compute Shift Metrics)  ▼ (Pickled Models)
        ┌─────────────┐          ┌─────────────┐          ┌─────────────┐
-       │   SQLite    │          │    Drift    │          │  Artifact   │
-       │  Database   │          │   Engine    │          │   Store     │
-       │ (SQLAlchemy)│          │  (PSI/KS/JS)│          │(Local Files)│
+       │   MongoDB   │          │    Drift    │          │  Artifact   │
+       │  7.0 (Motor)│          │   Engine    │          │   Store     │
+       │ Time Series │          │  (PSI/KS/JS)│          │(Local Files)│
        └─────────────┘          └─────────────┘          └─────────────┘
                                       ▲
                                       │ (REST APIs)
@@ -32,9 +32,43 @@ Featuring a premium **phosphor green / retro CRT terminal aesthetic** that simul
        └─────────────────────────────────────────────────────────────┘
 ```
 
-* **Backend (`/backend`)**: Built with **FastAPI**, **SQLAlchemy**, and **SQLite**. Handles model validation, ingestion pipelines, statistics computing, and alert routing.
-* **Frontend (`/frontend`)**: Built with **Next.js**, **Tailwind CSS**, and **Recharts**. Consists of a custom interactive command-line simulator dashboard, a detailed documentation reader, and a model registration portal.
-* **Drift Engine**: Mathematical suite computing population shifts on tabular variables, predictions, and target distributions.
+* **Backend (`/backend`)**: Built with **FastAPI**, **Motor (async MongoDB driver)**, and **MongoDB 7.0**. Handles model registration, JWT-based authentication, batch ingestion pipelines, statistical drift analysis, and alert routing.
+* **Frontend (`/frontend`)**: Built with **Next.js**, **Tailwind CSS**, and **Recharts**. Features a login page, protected dashboard, and real-time drift monitoring UI.
+* **Drift Engine**: Mathematical suite computing PSI, KS two-sample test, and Jensen–Shannon divergence on feature distributions.
+
+---
+
+## 🔐 Authentication Setup
+
+DriftWatch uses **JWT Bearer token authentication**. All API endpoints (except `/auth/login` and `/auth/register`) require a valid token.
+
+### Default Admin Credentials
+When the backend starts for the first time, it seeds a default admin user:
+- **Email:** `admin@example.com`
+- **Password:** `admin123`
+
+> **Important:** Change these in production by registering a new admin via `POST /auth/register` and disabling the seed.
+
+### Environment Variable
+Set a strong secret for JWT signing:
+```bash
+JWT_SECRET=your-very-long-random-secret-key-here
+```
+
+In `docker-compose.yml`:
+```yaml
+environment:
+  - JWT_SECRET=your-very-long-random-secret-key-here
+```
+
+### Auth API Endpoints
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/auth/login` | Login with email + password. Returns JWT. |
+| `POST` | `/auth/register` | Register a new operator account. |
+| `GET` | `/auth/me` | Returns current authenticated user info. |
+
+
 
 ---
 

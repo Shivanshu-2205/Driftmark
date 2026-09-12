@@ -1,8 +1,132 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { api, Model } from "@/lib/api";
+import { AppNavbar } from "@/components/Navbar";
+import { LoadingSpinner } from "@/components/ui";
+
+function StatusBadge({ status }: { status: string }) {
+  const isBlocked = status === "blocked_pending_retrain";
+  if (isBlocked) {
+    return (
+      <span className="badge badge-red">
+        <span className="dot dot-red" style={{ width: 5, height: 5 }} />
+        Blocked
+      </span>
+    );
+  }
+  return (
+    <span className="badge badge-green">
+      <span className="dot dot-green" style={{ width: 5, height: 5 }} />
+      Active
+    </span>
+  );
+}
+
+function AlertBadge({ count }: { count: number }) {
+  if (count === 0) {
+    return <span style={{ fontSize: 12, color: "var(--text-muted)" }}>0 alerts</span>;
+  }
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--red)", fontWeight: 600 }}>
+      <span className="dot dot-red pulse" style={{ width: 6, height: 6 }} />
+      {count} alert{count > 1 ? "s" : ""}
+    </span>
+  );
+}
+
+function PSIValue({ psi, severity }: { psi: number | null; severity?: string }) {
+  if (psi === null) return <span style={{ color: "var(--text-muted)" }}>—</span>;
+  const color = severity === "severe" ? "var(--red)" : severity === "moderate" ? "var(--amber)" : "var(--green)";
+  return <span style={{ color, fontFamily: "var(--font-mono)", fontWeight: 600 }}>{psi.toFixed(4)}</span>;
+}
+
+function ModelCard({ model }: { model: Model }) {
+  const isBlocked = model.status === "blocked_pending_retrain";
+
+  return (
+    <div
+      className="card"
+      style={{
+        padding: 20,
+        display: "flex",
+        flexDirection: "column",
+        gap: 0,
+        transition: "border-color 0.15s",
+        borderColor: isBlocked ? "rgba(239,68,68,0.3)" : undefined,
+      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = isBlocked ? "rgba(239,68,68,0.5)" : "rgba(66,74,65,0.8)"; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = isBlocked ? "rgba(239,68,68,0.3)" : "var(--border)"; }}
+    >
+      {/* Card header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <span style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>#{model.id}</span>
+        <StatusBadge status={model.status} />
+      </div>
+
+      {/* Model name */}
+      <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 3, letterSpacing: "-0.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {model.name}
+      </div>
+      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 16 }}>{model.category}</div>
+
+      {/* Metrics */}
+      <div style={{ borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", padding: "12px 0", marginBottom: 16, display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+          <span style={{ color: "var(--text-muted)" }}>Last check</span>
+          <span style={{ color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>
+            {model.last_run ? model.last_run.batch_name : "—"}
+          </span>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+          <span style={{ color: "var(--text-muted)" }}>Overall PSI</span>
+          <PSIValue psi={model.last_run?.overall_psi ?? null} severity={model.last_run?.overall_severity} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+          <span style={{ color: "var(--text-muted)" }}>Thresholds</span>
+          <span style={{ color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>
+            {model.threshold_moderate} / {model.threshold_severe}
+          </span>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <AlertBadge count={model.active_alerts_count} />
+        <Link href={`/models/${model.id}`} className="btn btn-outline" style={{ fontSize: 12, padding: "5px 12px" }}>
+          Dashboard →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function EmptyCard() {
+  return (
+    <div style={{
+      border: "1px dashed var(--border)",
+      borderRadius: 6,
+      padding: 32,
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 12,
+      textAlign: "center",
+      minHeight: 240,
+    }}>
+      <div style={{ fontSize: 28, color: "var(--text-muted)" }}>+</div>
+      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-secondary)" }}>Register New Model</div>
+      <div style={{ fontSize: 12, color: "var(--text-muted)", maxWidth: 200 }}>
+        Connect a pre-trained model to start drift monitoring
+      </div>
+      <Link href="/models/new" className="btn btn-outline" style={{ fontSize: 12, marginTop: 4 }}>
+        + Register Model
+      </Link>
+    </div>
+  );
+}
 
 export default function ModelRegistry() {
   const [models, setModels] = useState<Model[]>([]);
@@ -15,152 +139,96 @@ export default function ModelRegistry() {
       setApiOnline(true);
       const data = await api.models();
       setModels(data);
-    } catch (e) {
+    } catch {
       setApiOnline(false);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    loadModels();
-  }, [loadModels]);
+  useEffect(() => { loadModels(); }, [loadModels]);
 
   if (apiOnline === false) {
     return (
-      <main className="min-h-screen flex items-center justify-center p-8">
-        <div className="panel p-8 max-w-md text-center">
-          <div className="text-2xl mb-2 glow-text">▓ CONNECTION LOST</div>
-          <p className="text-sm opacity-70">
-            Cannot reach DriftWatch API. Make sure the backend is running at{" "}
-            <code className="text-amber-400">http://localhost:8000</code>
-          </p>
+      <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+        <AppNavbar />
+        <div style={{ maxWidth: 480, margin: "120px auto", padding: 24 }}>
+          <div className="card" style={{ padding: 32, textAlign: "center" }}>
+            <div style={{ fontSize: 20, fontWeight: 600, color: "var(--red)", marginBottom: 10 }}>Connection Failed</div>
+            <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 8 }}>
+              Cannot reach the DriftWatch API. Make sure the backend is running at:
+            </p>
+            <code style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--amber)" }}>http://localhost:8000</code>
+          </div>
         </div>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen p-6 max-w-7xl mx-auto">
-      <header className="flex items-center justify-between mb-8 pb-4 border-b" style={{ borderColor: "var(--border-dim)" }}>
-        <div>
-          <h1 className="text-2xl font-extrabold glow-text tracking-tight">
-            DRIFTWATCH // REGISTRY<span className="blink">_</span>
-          </h1>
-          <p className="text-xs opacity-50 mt-1">ENTERPRISE MULTI-MODEL DRIFT &amp; RELIABILITY REGISTRY</p>
-        </div>
-        <div className="flex items-center gap-4 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full" style={{ background: apiOnline ? "var(--phosphor)" : "var(--danger)", boxShadow: "0 0 8px currentColor" }} />
-            <span className="opacity-70">{apiOnline ? "REGISTRY ONLINE" : "OFFLINE"}</span>
+    <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+      <AppNavbar />
+
+      <main style={{ maxWidth: 1280, margin: "0 auto", padding: 24 }}>
+        {/* Page header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24, paddingBottom: 20, borderBottom: "1px solid var(--border)", flexWrap: "wrap", gap: 16 }}>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.01em", marginBottom: 4 }}>
+              Model Registry
+            </h1>
+            <p style={{ fontSize: 13, color: "var(--text-muted)" }}>
+              Monitor and manage your production ML models
+            </p>
           </div>
-          <Link
-            href="/models/new"
-            className="px-3 py-1.5 text-xs font-bold border border-[var(--phosphor)] glow-border hover:bg-[rgba(57,255,106,0.08)] transition"
-          >
-            [+] REGISTER NEW MODEL
-          </Link>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-muted)" }}>
+              <span className={`dot dot-${apiOnline ? "green" : "red"} ${apiOnline ? "pulse" : ""}`} style={{ width: 6, height: 6 }} />
+              {apiOnline ? "Registry Online" : "Offline"}
+            </div>
+            <Link href="/models/new" className="btn btn-primary" style={{ fontSize: 13 }}>
+              + Register New Model
+            </Link>
+          </div>
         </div>
-      </header>
 
-      {loading ? (
-        <div className="text-center py-20 text-sm blink">LOADING MODEL REGISTRY...</div>
-      ) : models.length === 0 ? (
-        <div className="panel p-8 text-center py-20">
-          <div className="text-xl mb-2 opacity-80">▓ NO MODELS REGISTERED</div>
-          <p className="text-xs opacity-50 mb-6">Create a model to start monitoring production data drift.</p>
-          <Link
-            href="/models/new"
-            className="px-4 py-2 text-sm font-bold border border-[var(--phosphor)] glow-border hover:bg-[rgba(57,255,106,0.08)] transition"
-          >
-            + REGISTER FIRST MODEL
-          </Link>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {models.map((model) => {
-            const hasAlerts = model.active_alerts_count > 0;
-            const isBlocked = model.status === "blocked_pending_retrain";
-            const severityColor = isBlocked ? "var(--danger)" : "var(--phosphor)";
-
-            return (
-              <div key={model.id} className="panel p-5 flex flex-col justify-between scanner-sweep relative">
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-mono opacity-40">ID: #{model.id}</span>
-                    <span
-                      className="px-2 py-0.5 text-[10px] font-bold uppercase border"
-                      style={{
-                        color: severityColor,
-                        borderColor: severityColor,
-                        textShadow: `0 0 6px ${severityColor}`,
-                      }}
-                    >
-                      {isBlocked ? "▓ BLOCKED" : "ACTIVE"}
-                    </span>
-                  </div>
-
-                  <h2 className="text-lg font-bold mb-1 truncate glow-text text-white">
-                    {model.name}
-                  </h2>
-                  <p className="text-xs opacity-50 mb-4">{model.category}</p>
-
-                  <div className="border-t border-b border-[var(--border-dim)] py-3 my-4 text-xs space-y-2">
-                    <div className="flex justify-between">
-                      <span className="opacity-50">Last Health Check:</span>
-                      <span className="font-bold">
-                        {model.last_run ? model.last_run.batch_name.toUpperCase() : "N/A"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="opacity-50">Overall PSI:</span>
-                      <span
-                        className="font-bold"
-                        style={{
-                          color: model.last_run?.overall_severity === "severe"
-                            ? "var(--danger)"
-                            : model.last_run?.overall_severity === "moderate"
-                            ? "var(--amber)"
-                            : "var(--phosphor)",
-                        }}
-                      >
-                        {model.last_run ? model.last_run.overall_psi.toFixed(4) : "—"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="opacity-50">Thresholds (Mod/Sev):</span>
-                      <span className="opacity-70">
-                        {model.threshold_moderate} / {model.threshold_severe}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between mt-2">
-                  <div className="flex items-center gap-1.5">
-                    {hasAlerts ? (
-                      <span className="flex items-center gap-1 text-xs text-[var(--danger)] font-bold animate-pulse">
-                        <span className="inline-block w-2.5 h-2.5 bg-[var(--danger)] rounded-full" />
-                        {model.active_alerts_count} ALERT(S)
-                      </span>
-                    ) : (
-                      <span className="text-[10px] opacity-40">0 ALERTS</span>
-                    )}
-                  </div>
-
-                  <Link
-                    href={`/models/${model.id}`}
-                    className="px-4 py-1.5 text-xs font-bold border hover:bg-[rgba(57,255,106,0.08)] transition"
-                    style={{ borderColor: "var(--phosphor-dim)" }}
-                  >
-                    DASHBOARD →
-                  </Link>
-                </div>
+        {/* Stats bar */}
+        {!loading && models.length > 0 && (
+          <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
+            {[
+              { label: "Total Models", value: models.length },
+              { label: "Active", value: models.filter(m => m.status === "active").length },
+              { label: "Blocked", value: models.filter(m => m.status === "blocked_pending_retrain").length },
+              { label: "With Alerts", value: models.filter(m => m.active_alerts_count > 0).length },
+            ].map(s => (
+              <div key={s.label} className="card" style={{ padding: "10px 16px", display: "flex", gap: 8, alignItems: "center" }}>
+                <span style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--text-primary)" }}>{s.value}</span>
+                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{s.label}</span>
               </div>
-            );
-          })}
-        </div>
-      )}
-    </main>
+            ))}
+          </div>
+        )}
+
+        {/* Content */}
+        {loading ? (
+          <LoadingSpinner text="Loading model registry..." />
+        ) : models.length === 0 ? (
+          <div className="card" style={{ padding: "80px 32px", textAlign: "center" }}>
+            <div style={{ fontSize: 28, color: "var(--text-muted)", marginBottom: 16 }}>◈</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 8 }}>No models registered</div>
+            <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 24 }}>
+              Register your first model to start monitoring production data drift.
+            </div>
+            <Link href="/models/new" className="btn btn-primary">
+              + Register First Model
+            </Link>
+          </div>
+        ) : (
+          <div className="grid-3" style={{ gap: 16 }}>
+            {models.map(model => <ModelCard key={model.id} model={model} />)}
+            <EmptyCard />
+          </div>
+        )}
+      </main>
+    </div>
   );
 }

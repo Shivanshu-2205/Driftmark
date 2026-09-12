@@ -1,206 +1,254 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
+import { AppNavbar } from "@/components/Navbar";
 
 export default function DocsPage() {
   return (
-    <main className="min-h-screen p-6 max-w-4xl mx-auto">
-      {/* Header */}
-      <header className="flex items-center justify-between mb-8 pb-4 border-b" style={{ borderColor: "var(--border-dim)" }}>
-        <div>
-          <div className="text-xs opacity-50 flex items-center gap-2 mb-1">
-            <Link href="/" className="hover:underline text-[var(--phosphor)]">← BACK TO HOME</Link>
-            <span>//</span>
-            <span>DOCUMENTATION CENTRAL</span>
+    <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+      <AppNavbar />
+
+      <main style={{ maxWidth: 960, margin: "0 auto", padding: "32px 24px 64px" }}>
+        {/* Header */}
+        <div style={{ marginBottom: 32, paddingBottom: 20, borderBottom: "1px solid var(--border)" }}>
+          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>
+            <Link href="/" style={{ color: "var(--green)", textDecoration: "none" }}>
+              ← Home
+            </Link>{" "}
+            / Documentation Central
           </div>
-          <h1 className="text-2xl font-extrabold glow-text tracking-tight uppercase">
-            DRIFTWATCH // MANUAL<span className="blink">_</span>
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.01em", marginBottom: 6 }}>
+            DriftWatch Platform Documentation
           </h1>
-          <p className="text-xs opacity-50">SYSTEM SPECIFICATIONS &amp; STATISTICAL OPERATIONS</p>
+          <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>
+            System specifications, statistical testing methodologies, and architectural reference
+          </p>
         </div>
-      </header>
 
-      {/* Docs Body */}
-      <div className="space-y-8 text-xs font-mono">
-        {/* SECTION 1 */}
-        <section className="panel p-6 scanner-sweep">
-          <h2 className="text-sm font-bold border-b border-[var(--border-dim)] pb-2 mb-4 text-[var(--phosphor-bright)] glow-text">
-            ▓ 01. ARCHITECTURE &amp; PIPELINE
-          </h2>
-          <p className="leading-relaxed mb-4">
-            DriftWatch runs as a decoupled full-stack observatory. The backend operates on an asynchronous 
-            FastAPI loop running standard statistical tests over inference streams, storing operations logs 
-            in a structured metadata layer.
-          </p>
-          <div className="bg-black/40 border border-[var(--border-dim)] p-4 rounded mb-4 overflow-x-auto">
-            <pre className="text-[10px] text-[var(--phosphor-bright)] leading-tight">
-{`   [ Production Endpoint / Inference Stream ]
-                       │
-                       ▼  (CSV Batch Upload / Ingestion API)
-             ┌───────────────────┐
-             │  FastAPI Backend  │ ◄─── (REST Queries) ───┐
-             └─────────┬─────────┘                         │
-                       │                             ┌─────┴─────┐
-            (Compute Drift Scores)                   │  Next.js  │
-                       │                             │  Frontend │
-                       ▼                             └───────────┘
-             ┌───────────────────┐
-             │   Drift Engine    │
-             │ (PSI/KS/JS tests) │
-             └───────────────────┘`}
-            </pre>
-          </div>
-          <p className="leading-relaxed">
-            Data, prediction probabilities, and ground-truth targets are parsed dynamically through parallel 
-            calculators and stored inside the database, enabling instantaneous validation feedback on the user console.
-          </p>
-        </section>
+        <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+          {/* Section 1: Architecture */}
+          <section className="card" style={{ padding: 28 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
+              01. Architecture &amp; Data Pipeline
+            </div>
+            <h2 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", marginBottom: 12 }}>
+              Decoupled Observability Pipeline
+            </h2>
+            <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: 16 }}>
+              DriftWatch operates as an asynchronous, non-intrusive surveillance layer on top of your production ML stack. 
+              The backend leverages FastAPI running optimized statistical operations over rolling inference windows, recording 
+              multivariate stability scores inside a transactional metadata layer.
+            </p>
 
-        {/* SECTION 2 */}
-        <section className="panel p-6">
-          <h2 className="text-sm font-bold border-b border-[var(--border-dim)] pb-2 mb-4 text-[var(--phosphor-bright)] glow-text">
-            ▓ 02. STATISTICAL ENGINES
-          </h2>
-          <p className="leading-relaxed mb-4">
-            To detect distribution shift, three independent statistical tests are executed during batch processing:
-          </p>
+            <div style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: "16px 20px", marginBottom: 16, overflowX: "auto" }}>
+              <pre style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--green)", margin: 0, lineHeight: 1.5 }}>
+{`  [ Production Endpoint / Inference Stream ]
+                      │
+                      ▼ (CSV Batch Ingestion API)
+            ┌───────────────────┐
+            │  FastAPI Backend  │ ◄─── (REST Queries) ───┐
+            └─────────┬─────────┘                         │
+                      │                             ┌─────┴─────┐
+           (Compute Drift Scores)                   │  Next.js  │
+                      │                             │  Frontend │
+                      ▼                             └───────────┘
+            ┌───────────────────┐
+            │   Drift Engine    │
+            │ (PSI / KS / JSD)  │
+            └───────────────────┘`}
+              </pre>
+            </div>
+            <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.7, margin: 0 }}>
+              Incoming feature arrays, predicted probability distributions, and ground-truth labels are continuously compared 
+              against baseline reference artifacts to calculate divergence metrics with millisecond latency.
+            </p>
+          </section>
 
-          <div className="space-y-4">
-            <div className="border border-[var(--border-dim)] p-4 bg-black/20">
-              <h3 className="font-bold text-[var(--phosphor)] mb-1">A. POPULATION STABILITY INDEX (PSI)</h3>
-              <p className="mb-2">Measures shifting population behavior over a defined interval compared to baseline reference data.</p>
-              <code className="block bg-black p-2 mb-2 text-[var(--amber)]">
-                PSI = SUM( (Actual% - Reference%) * ln(Actual% / Reference%) )
-              </code>
-              <p className="text-[10px] opacity-70">
-                • PSI &lt; 0.10: Stable distribution.<br />
-                • 0.10 &le; PSI &lt; 0.25: Moderate shift (Warning state).<br />
-                • PSI &ge; 0.25: Severe shift (Lock pipeline / Alert state).
-              </p>
+          {/* Section 2: Statistical Engines */}
+          <section className="card" style={{ padding: 28 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
+              02. Statistical Engines
             </div>
+            <h2 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", marginBottom: 12 }}>
+              Multi-Metric Drift Detection
+            </h2>
+            <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: 20 }}>
+              To catch different dimensions of distribution shift, three independent statistical tests are calculated for each feature vector during batch processing:
+            </p>
 
-            <div className="border border-[var(--border-dim)] p-4 bg-black/20">
-              <h3 className="font-bold text-[var(--phosphor)] mb-1">B. KOLMOGOROV-SMIRNOV (KS) TEST</h3>
-              <p className="mb-2">A non-parametric test comparing the cumulative distribution functions of the production data and baseline. Returns:</p>
-              <p className="text-[10px] opacity-70">
-                • <strong>KS Statistic (D):</strong> The maximum vertical distance between cumulative probability graphs.<br />
-                • <strong>p-value:</strong> Probability that both datasets come from the same distribution. p &lt; 0.05 indicates high likelihood of shift.
-              </p>
-            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {/* PSI */}
+              <div style={{ background: "var(--surface-raised)", border: "1px solid var(--border)", borderRadius: 6, padding: 18 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <h3 style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>
+                    A. Population Stability Index (PSI)
+                  </h3>
+                  <span className="badge badge-green">Primary Indicator</span>
+                </div>
+                <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: 10 }}>
+                  Quantifies divergence between reference and target population distributions across quantile buckets:
+                </p>
+                <div style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 4, padding: "8px 12px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--amber)", marginBottom: 10 }}>
+                  PSI = Σ [ (Actual% - Reference%) × ln(Actual% / Reference%) ]
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, fontSize: 11 }}>
+                  <div style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", padding: 8, borderRadius: 4 }}>
+                    <div style={{ color: "var(--green)", fontWeight: 600 }}>PSI &lt; 0.10</div>
+                    <div style={{ color: "var(--text-muted)" }}>Stable distribution; normal operation.</div>
+                  </div>
+                  <div style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", padding: 8, borderRadius: 4 }}>
+                    <div style={{ color: "var(--amber)", fontWeight: 600 }}>0.10 ≤ PSI &lt; 0.25</div>
+                    <div style={{ color: "var(--text-muted)" }}>Moderate shift; warning state issued.</div>
+                  </div>
+                  <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", padding: 8, borderRadius: 4 }}>
+                    <div style={{ color: "var(--red)", fontWeight: 600 }}>PSI ≥ 0.25</div>
+                    <div style={{ color: "var(--text-muted)" }}>Severe drift; gates lock pipeline.</div>
+                  </div>
+                </div>
+              </div>
 
-            <div className="border border-[var(--border-dim)] p-4 bg-black/20">
-              <h3 className="font-bold text-[var(--phosphor)] mb-1">C. JENSEN-SHANNON (JS) DIVERGENCE</h3>
-              <p>
-                A symmetric distance metric based on Shannon entropy measuring probability divergence. Values range from 0 (identical) to 1 (disjoint).
-              </p>
-            </div>
-          </div>
-        </section>
+              {/* KS Test */}
+              <div style={{ background: "var(--surface-raised)", border: "1px solid var(--border)", borderRadius: 6, padding: 18 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 6 }}>
+                  B. Kolmogorov-Smirnov (KS) Test
+                </h3>
+                <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: 8 }}>
+                  A non-parametric hypothesis test that calculates the maximum vertical distance between empirical cumulative distribution functions (eCDFs) of production data and the reference baseline.
+                </p>
+                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                  • <strong style={{ color: "var(--text-secondary)" }}>KS Statistic (D):</strong> Supremum distance between cumulative curves.<br />
+                  • <strong style={{ color: "var(--text-secondary)" }}>p-value:</strong> Probability that both samples originate from the same continuous distribution (p &lt; 0.05 indicates statistically significant drift).
+                </div>
+              </div>
 
-        {/* SECTION 3 */}
-        <section className="panel p-6">
-          <h2 className="text-sm font-bold border-b border-[var(--border-dim)] pb-2 mb-4 text-[var(--phosphor-bright)] glow-text">
-            ▓ 03. METADATA DATABASE SCHEMAS
-          </h2>
-          <p className="leading-relaxed mb-4">
-            The database structure uses SQLAlchemy models. It maintains tracking records, drift run metrics, alerts, model versions, and pending batch cues:
-          </p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-[10px] border-collapse text-left">
-              <thead>
-                <tr className="border-b border-[var(--border-dim)] text-[var(--phosphor)] uppercase">
-                  <th className="py-2 pr-4 font-bold">Model Table</th>
-                  <th className="py-2 pr-4 font-bold">Schema Definition</th>
-                  <th className="py-2 font-bold">Description</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border-dim)]/40">
-                <tr>
-                  <td className="py-2 pr-4 font-bold text-white">models</td>
-                  <td className="py-2 pr-4">id, name, category, feature_schema, thresholds, status</td>
-                  <td className="py-2 opacity-80">Primary registry metadata and active health status flags.</td>
-                </tr>
-                <tr>
-                  <td className="py-2 pr-4 font-bold text-white">drift_runs</td>
-                  <td className="py-2 pr-4">id, model_id, batch_name, overall_psi, prediction_psi, metrics_json</td>
-                  <td className="py-2 opacity-80">Historical log of processed inference batches and drift scores.</td>
-                </tr>
-                <tr>
-                  <td className="py-2 pr-4 font-bold text-white">alerts</td>
-                  <td className="py-2 pr-4">id, model_id, drift_run_id, severity, drift_type, message, acknowledged</td>
-                  <td className="py-2 opacity-80">Chronological feed of warning notifications generated during runs.</td>
-                </tr>
-                <tr>
-                  <td className="py-2 pr-4 font-bold text-white">model_versions</td>
-                  <td className="py-2 pr-4">id, model_id, version, trained_at, trigger_reason, accuracy, is_active</td>
-                  <td className="py-2 opacity-80">Model versioning and historical evaluation registry.</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
+              {/* JS Divergence */}
+              <div style={{ background: "var(--surface-raised)", border: "1px solid var(--border)", borderRadius: 6, padding: 18 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 6 }}>
+                  C. Jensen-Shannon (JS) Divergence
+                </h3>
+                <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>
+                  A smoothed, symmetric relative entropy metric based on Kullback-Leibler divergence that bounds divergence scores between 0 (identical) and 1 (orthogonal/disjoint distributions).
+                </p>
+              </div>
+            </div>
+          </section>
 
-        {/* SECTION 4 */}
-        <section className="panel p-6">
-          <h2 className="text-sm font-bold border-b border-[var(--border-dim)] pb-2 mb-4 text-[var(--phosphor-bright)] glow-text">
-            ▓ 04. DRIFT SIMULATION TIMELINE
-          </h2>
-          <p className="leading-relaxed mb-4">
-            The platform generates a baseline dataset and 10 sequential production batches with injected noise. 
-            The flow simulates drift progression over time:
-          </p>
-          <div className="space-y-3">
-            <div className="flex border border-[var(--border-dim)] p-2">
-              <div className="w-24 text-[var(--phosphor)] font-bold">BATCH 01-04</div>
-              <div className="flex-1">Normal baseline operating logs. Features match reference limits. PSI remains &le; 0.05. Accuracy remains stable at ~89%.</div>
+          {/* Section 3: Database Schema */}
+          <section className="card" style={{ padding: 28 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
+              03. Metadata Database Schema
             </div>
-            <div className="flex border border-[var(--border-dim)] p-2">
-              <div className="w-24 text-[var(--amber)] font-bold">BATCH 05-07</div>
-              <div className="flex-1">Gradual feature drift injected (e.g. shifts in debt-to-income and income). PSI warning triggers.</div>
-            </div>
-            <div className="flex border border-[var(--border-dim)] p-2">
-              <div className="w-24 text-[var(--danger)] font-bold">BATCH 08-10</div>
-              <div className="flex-1">Severe data drift combined with concept drift. Model accuracy drops under 80%, triggering critical alerts and locking ingestion.</div>
-            </div>
-          </div>
-        </section>
+            <h2 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", marginBottom: 12 }}>
+              Relational Storage Architecture
+            </h2>
+            <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: 18 }}>
+              DriftWatch persists telemetry and tracking events in SQLAlchemy entities for sub-second retrieval:
+            </p>
 
-        {/* SECTION 5 */}
-        <section className="panel p-6">
-          <h2 className="text-sm font-bold border-b border-[var(--border-dim)] pb-2 mb-4 text-[var(--phosphor-bright)] glow-text">
-            ▓ 05. OPERATIONAL CONTROL FLOW
-          </h2>
-          <div className="space-y-4">
-            <div>
-              <h3 className="font-bold text-white uppercase mb-1">Batch Ingestion</h3>
-              <p className="leading-relaxed">
-                New production logs can be submitted as a CSV or Excel format. Once queued, they represent 
-                production slices that wait to be evaluated against the reference baseline rules.
-              </p>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, textAlign: "left" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--border)", color: "var(--text-muted)" }}>
+                    <th style={{ padding: "8px 12px", fontWeight: 600 }}>Entity Table</th>
+                    <th style={{ padding: "8px 12px", fontWeight: 600 }}>Fields</th>
+                    <th style={{ padding: "8px 12px", fontWeight: 600 }}>Operational Role</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["models", "id, name, category, feature_schema, thresholds, status", "Primary registry metadata and health status flags"],
+                    ["drift_runs", "id, model_id, batch_name, overall_psi, prediction_psi, metrics_json", "Historical audit log of processed inference batches"],
+                    ["alerts", "id, model_id, drift_run_id, severity, drift_type, message, acknowledged", "Chronological feed of warning notifications"],
+                    ["model_versions", "id, model_id, version, trained_at, trigger_reason, accuracy, is_active", "Model artifact lineage and evaluation registry"],
+                  ].map(([table, fields, role]) => (
+                    <tr key={table} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                      <td style={{ padding: "10px 12px", fontFamily: "var(--font-mono)", fontWeight: 600, color: "var(--green)" }}>{table}</td>
+                      <td style={{ padding: "10px 12px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-secondary)" }}>{fields}</td>
+                      <td style={{ padding: "10px 12px", color: "var(--text-muted)" }}>{role}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <div>
-              <h3 className="font-bold text-white uppercase mb-1">Bypass Override</h3>
-              <p className="leading-relaxed">
-                When a severe drift alert locks the ingestion queue, operators can flag the "Force Bypass" check 
-                to continue processing incoming slices, overriding safety barriers manually when necessary.
-              </p>
-            </div>
-            <div>
-              <h3 className="font-bold text-white uppercase mb-1">Simulated Retraining</h3>
-              <p className="leading-relaxed">
-                Clicking the "Retrain Model" button compiles new training runs, registers a promoted version 
-                (e.g., v2), unlocks the pipeline, and resets the baseline metrics.
-              </p>
-            </div>
-          </div>
-        </section>
-      </div>
+          </section>
 
-      {/* Footer */}
-      <footer className="footer mt-12">
-        <span className="green-dim-text">▓ DRIFTWATCH MANUAL</span>
-        <span className="muted">// SECURE SHELL ENGINE // SYSTEM NOMINAL</span>
-      </footer>
-    </main>
+          {/* Section 4: Simulation Progression */}
+          <section className="card" style={{ padding: 28 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
+              04. Drift Simulation Lifecycle
+            </div>
+            <h2 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", marginBottom: 12 }}>
+              Production Lifecycle Progression
+            </h2>
+            <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: 16 }}>
+              The platform ships with a baseline reference dataset and 10 sequential production batches demonstrating drift lifecycle progression:
+            </p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {[
+                { stage: "Batches 01–04", status: "Stable State", badge: "badge-green", desc: "Normal baseline operation. Feature distributions align with reference limits. PSI remains ≤ 0.05. Model accuracy is stable at ~89%." },
+                { stage: "Batches 05–07", status: "Moderate Shift", badge: "badge-amber", desc: "Covariate shift injected into continuous features (e.g. debt-to-income and revolving balances). Warning alerts trigger." },
+                { stage: "Batches 08–10", status: "Severe Drift", badge: "badge-red", desc: "Severe feature divergence combined with concept drift. Model accuracy drops below 80%, triggering critical alerts and locking ingestion." },
+              ].map((s) => (
+                <div key={s.stage} style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "12px 16px", background: "var(--surface-raised)", border: "1px solid var(--border)", borderRadius: 6 }}>
+                  <div style={{ minWidth: 110 }}>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>{s.stage}</div>
+                    <span className={`badge ${s.badge}`} style={{ fontSize: 10, marginTop: 4 }}>{s.status}</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6 }}>{s.desc}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Section 5: Control Operations */}
+          <section className="card" style={{ padding: 28 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
+              05. Operational Workflows
+            </div>
+            <h2 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", marginBottom: 14 }}>
+              Ingestion, Gating &amp; Retraining
+            </h2>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
+              <div style={{ padding: 16, background: "var(--surface-raised)", border: "1px solid var(--border)", borderRadius: 6 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 6 }}>
+                  Batch Chunking
+                </div>
+                <p style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>
+                  Upload raw inference CSVs. The system divides datasets into discrete evaluation slices (e.g. 200 rows/batch) queued for evaluation.
+                </p>
+              </div>
+
+              <div style={{ padding: 16, background: "var(--surface-raised)", border: "1px solid var(--border)", borderRadius: 6 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 6 }}>
+                  Gate Bypass Override
+                </div>
+                <p style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>
+                  When critical drift triggers a pipeline lock, operators can enable the &quot;Force Bypass&quot; flag to process batches under human supervision.
+                </p>
+              </div>
+
+              <div style={{ padding: 16, background: "var(--surface-raised)", border: "1px solid var(--border)", borderRadius: 6 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 6 }}>
+                  Simulated Retraining
+                </div>
+                <p style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>
+                  Triggering model retrain compiles the most recent production distribution into the training corpus, deploys a promoted model version (e.g. v2), and resets baseline gates.
+                </p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* Footer */}
+        <div style={{ marginTop: 48, paddingTop: 20, borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "var(--text-muted)" }}>
+          <span>DriftWatch ML Observability · v2.4.1</span>
+          <Link href="/models" style={{ color: "var(--green)", textDecoration: "none" }}>
+            Open Model Registry →
+          </Link>
+        </div>
+      </main>
+    </div>
   );
 }

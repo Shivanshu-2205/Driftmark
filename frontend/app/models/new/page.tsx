@@ -1,9 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { AppNavbar } from "@/components/Navbar";
+import { ErrorBanner } from "@/components/ui";
 
 export default function AddModel() {
   const router = useRouter();
@@ -27,7 +29,7 @@ export default function AddModel() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!modelFile || !baselineFile || !name) {
-      setErrorMessage("Please fill out all required fields and upload the model and baseline files.");
+      setErrorMessage("Please fill out all required fields and attach the pre-trained model and baseline dataset.");
       return;
     }
 
@@ -57,161 +59,202 @@ export default function AddModel() {
   };
 
   return (
-    <main className="min-h-screen p-6 max-w-2xl mx-auto flex flex-col justify-center">
-      <div className="mb-4">
-        <Link href="/models" className="text-xs hover:underline text-[var(--phosphor)]">
-          ← BACK TO REGISTRY
-        </Link>
-      </div>
+    <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+      <AppNavbar />
 
-      <div className="panel p-6 scanner-sweep">
-        <header className="mb-6 border-b border-[var(--border-dim)] pb-3">
-          <h1 className="text-xl font-bold glow-text tracking-tight uppercase">
-            REGISTRATION PORTAL // NEW_MODEL
-          </h1>
-          <p className="text-[10px] opacity-50 mt-0.5">REGISTER PRE-TRAINED MODELS, BASELINES &amp; THRESHOLDS</p>
-        </header>
+      <main style={{ maxWidth: 740, margin: "0 auto", padding: "32px 20px" }}>
+        {/* Navigation Breadcrumb */}
+        <div style={{ marginBottom: 20 }}>
+          <Link href="/models" style={{ fontSize: 12, color: "var(--green)", textDecoration: "none" }}>
+            ← Back to Model Registry
+          </Link>
+        </div>
 
-        {errorMessage && (
-          <div className="panel border-red-500 p-3 mb-6 text-xs text-red-400 bg-black/40">
-            <span className="font-bold">REGISTRY REJECTION:</span> {errorMessage}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          <div>
-            <label className="block mb-1 opacity-70 font-bold uppercase tracking-wider">Model Name *</label>
-            <input
-              type="text"
-              placeholder="e.g. Credit Default Predictor"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              disabled={submitting}
-              className="w-full bg-black border border-[var(--border-dim)] p-2 text-white font-mono"
-            />
+        <div className="card" style={{ padding: 32 }}>
+          {/* Header */}
+          <div style={{ borderBottom: "1px solid var(--border)", paddingBottom: 20, marginBottom: 24 }}>
+            <h1 style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.01em", marginBottom: 6 }}>
+              Register New Model
+            </h1>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>
+              Register pre-trained model artifacts, statistical reference baselines, and drift sensitivity thresholds.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {errorMessage && <ErrorBanner message={errorMessage} />}
+
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            {/* Section: General Configuration */}
             <div>
-              <label className="block mb-1 opacity-70 font-bold uppercase tracking-wider">Category *</label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                disabled={submitting}
-                className="w-full bg-black border border-[var(--border-dim)] p-2 text-[var(--phosphor)] font-mono"
-              >
-                <option value="binary_classification_tabular">Binary Classification (Tabular)</option>
-                <option value="regression_tabular">Regression (Tabular)</option>
-                <option value="multiclass_tabular">Multiclass (Tabular)</option>
-              </select>
-            </div>
-            <div>
-              <label className="block mb-1 opacity-70 font-bold uppercase tracking-wider">Target Label Column Name *</label>
+              <label className="label" htmlFor="model-name">
+                Model Name <span style={{ color: "var(--red)" }}>*</span>
+              </label>
               <input
+                id="model-name"
                 type="text"
-                placeholder="e.g. default"
-                value={targetColumn}
-                onChange={(e) => setTargetColumn(e.target.value)}
+                placeholder="e.g. Credit Default Classifier v3"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 required
                 disabled={submitting}
-                className="w-full bg-black border border-[var(--border-dim)] p-2 text-white font-mono"
+                className="input"
               />
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block mb-1 opacity-70 font-bold uppercase tracking-wider">Moderate Drift Threshold (PSI) *</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0.0"
-                max="1.0"
-                value={thresholdModerate}
-                onChange={(e) => setThresholdModerate(Number(e.target.value))}
-                required
-                disabled={submitting}
-                className="w-full bg-black border border-[var(--border-dim)] p-2 text-white font-mono"
-              />
-            </div>
-            <div>
-              <label className="block mb-1 opacity-70 font-bold uppercase tracking-wider">Severe Drift Threshold (PSI) *</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0.0"
-                max="1.0"
-                value={thresholdSevere}
-                onChange={(e) => setThresholdSevere(Number(e.target.value))}
-                required
-                disabled={submitting}
-                className="w-full bg-black border border-[var(--border-dim)] p-2 text-white font-mono"
-              />
-            </div>
-          </div>
-
-          <div className="border-t border-[var(--border-dim)] pt-4 space-y-3">
-            <h3 className="font-bold opacity-60 uppercase mb-2">▼ FILE ATTACHMENTS</h3>
-
-            <div className="grid grid-cols-1 gap-3">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <div>
-                <label className="block mb-1 opacity-70">Pre-trained Model File (.pkl) *</label>
+                <label className="label" htmlFor="category">
+                  Category <span style={{ color: "var(--red)" }}>*</span>
+                </label>
+                <select
+                  id="category"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  disabled={submitting}
+                  className="input"
+                >
+                  <option value="binary_classification_tabular">Binary Classification (Tabular)</option>
+                  <option value="regression_tabular">Regression (Tabular)</option>
+                  <option value="multiclass_tabular">Multiclass (Tabular)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="label" htmlFor="target-col">
+                  Target Label Column <span style={{ color: "var(--red)" }}>*</span>
+                </label>
                 <input
-                  type="file"
-                  accept=".pkl"
-                  onChange={(e) => setModelFile(e.target.files?.[0] || null)}
+                  id="target-col"
+                  type="text"
+                  placeholder="e.g. default"
+                  value={targetColumn}
+                  onChange={(e) => setTargetColumn(e.target.value)}
                   required
                   disabled={submitting}
-                  className="w-full bg-black border border-[var(--border-dim)] p-1.5"
-                  style={{ color: "var(--phosphor)" }}
-                />
-              </div>
-
-              <div>
-                <label className="block mb-1 opacity-70">Scaler Model File (.pkl, optional)</label>
-                <input
-                  type="file"
-                  accept=".pkl"
-                  onChange={(e) => setScalerFile(e.target.files?.[0] || null)}
-                  disabled={submitting}
-                  className="w-full bg-black border border-[var(--border-dim)] p-1.5"
-                  style={{ color: "var(--phosphor)" }}
-                />
-              </div>
-
-              <div>
-                <label className="block mb-1 opacity-70">Baseline Dataset (.csv) *</label>
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={(e) => setBaselineFile(e.target.files?.[0] || null)}
-                  required
-                  disabled={submitting}
-                  className="w-full bg-black border border-[var(--border-dim)] p-1.5"
-                  style={{ color: "var(--phosphor)" }}
+                  className="input"
                 />
               </div>
             </div>
-          </div>
 
-          <div className="pt-4 flex justify-between gap-4">
-            <Link
-              href="/models"
-              className="px-4 py-2 font-bold border border-red-950 text-red-500 hover:bg-[rgba(239,68,68,0.06)] text-center w-1/3 transition"
-            >
-              CANCEL
-            </Link>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-4 py-2 font-bold border border-[var(--phosphor)] glow-border hover:bg-[rgba(57,255,106,0.08)] disabled:opacity-30 text-center w-2/3 transition"
-            >
-              {submitting ? "UPLOADING SYSTEM ASSETS..." : "SUBMIT REGISTRY RECORD"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </main>
+            {/* Thresholds */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <div>
+                <label className="label" htmlFor="mod-thresh">
+                  Moderate Drift Threshold (PSI) <span style={{ color: "var(--red)" }}>*</span>
+                </label>
+                <input
+                  id="mod-thresh"
+                  type="number"
+                  step="0.01"
+                  min="0.0"
+                  max="1.0"
+                  value={thresholdModerate}
+                  onChange={(e) => setThresholdModerate(Number(e.target.value))}
+                  required
+                  disabled={submitting}
+                  className="input"
+                />
+                <span style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginTop: 4 }}>
+                  Warning triggers when PSI reaches this value (Default: 0.10)
+                </span>
+              </div>
+
+              <div>
+                <label className="label" htmlFor="sev-thresh">
+                  Severe Drift Threshold (PSI) <span style={{ color: "var(--red)" }}>*</span>
+                </label>
+                <input
+                  id="sev-thresh"
+                  type="number"
+                  step="0.01"
+                  min="0.0"
+                  max="1.0"
+                  value={thresholdSevere}
+                  onChange={(e) => setThresholdSevere(Number(e.target.value))}
+                  required
+                  disabled={submitting}
+                  className="input"
+                />
+                <span style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginTop: 4 }}>
+                  Ingestion locks when PSI reaches this value (Default: 0.25)
+                </span>
+              </div>
+            </div>
+
+            {/* Section: File Attachments */}
+            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 20, marginTop: 4 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 14 }}>
+                Artifact Attachments
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div>
+                  <label className="label">
+                    Pre-trained Model Artifact (.pkl) <span style={{ color: "var(--red)" }}>*</span>
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pkl"
+                    onChange={(e) => setModelFile(e.target.files?.[0] || null)}
+                    required
+                    disabled={submitting}
+                    className="input"
+                    style={{ padding: 6, fontSize: 12 }}
+                  />
+                </div>
+
+                <div>
+                  <label className="label">
+                    Scaler Artifact (.pkl, optional)
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pkl"
+                    onChange={(e) => setScalerFile(e.target.files?.[0] || null)}
+                    disabled={submitting}
+                    className="input"
+                    style={{ padding: 6, fontSize: 12 }}
+                  />
+                </div>
+
+                <div>
+                  <label className="label">
+                    Baseline Reference Dataset (.csv) <span style={{ color: "var(--red)" }}>*</span>
+                  </label>
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={(e) => setBaselineFile(e.target.files?.[0] || null)}
+                    required
+                    disabled={submitting}
+                    className="input"
+                    style={{ padding: 6, fontSize: 12 }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Form Actions */}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 20 }}>
+              <Link
+                href="/models"
+                className="btn btn-outline"
+                style={{ padding: "8px 20px" }}
+              >
+                Cancel
+              </Link>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="btn btn-primary"
+                style={{ padding: "8px 24px" }}
+              >
+                {submitting ? "Uploading Artifacts..." : "Register Model"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </main>
+    </div>
   );
 }

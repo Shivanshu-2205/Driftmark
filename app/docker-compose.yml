@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: driftwatch-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  python-ml:
+    build: ./python-ml
+    container_name: driftwatch-ml
+    # Not exposed publicly on purpose — only node-backend talks to it.
+    expose:
+      - "8001"
+    volumes:
+      - shared_models:/app_shared/models
+      - shared_data:/app_shared/data
+
+  node-backend:
+    build: ./node-backend
+    container_name: driftwatch-backend
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: 8000
+      MONGO_URI: mongodb://mongodb:27017
+      MONGO_DB: driftwatch_db
+      ML_SERVICE_URL: http://python-ml:8001
+      DATA_DIR: /app_shared/data
+      MODELS_DIR: /app_shared/models
+      JWT_SECRET: driftwatch-jwt-secret-key-change-in-production
+      JWT_EXPIRATION_SECONDS: 86400
+    depends_on:
+      - mongodb
+      - python-ml
+    volumes:
+      - shared_models:/app_shared/models
+      - shared_data:/app_shared/data
+
+volumes:
+  mongo_data:
+  shared_models:
+  shared_data:

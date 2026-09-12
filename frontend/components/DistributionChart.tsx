@@ -11,14 +11,27 @@ import {
   Legend,
 } from "recharts";
 
-function buildHistogram(values: number[], nBins = 12) {
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+function buildHistogram(values: number[] = [], nBins = 12) {
+  if (!values || values.length === 0) {
+    return Array.from({ length: nBins }, (_, i) => ({
+      binStart: i,
+      count: 0,
+    }));
+  }
+
+  let min = values[0];
+  let max = values[0];
+  for (let i = 1; i < values.length; i++) {
+    if (values[i] < min) min = values[i];
+    if (values[i] > max) max = values[i];
+  }
+
   const width = (max - min) / nBins || 1;
   const bins = Array.from({ length: nBins }, (_, i) => ({
     binStart: min + i * width,
     count: 0,
   }));
+
   values.forEach((v) => {
     let idx = Math.floor((v - min) / width);
     if (idx >= nBins) idx = nBins - 1;
@@ -29,37 +42,42 @@ function buildHistogram(values: number[], nBins = 12) {
 }
 
 export function DistributionChart({
-  baseline,
-  current,
+  baseline = [],
+  current = [],
 }: {
-  baseline: number[];
-  current: number[];
+  baseline?: number[];
+  current?: number[];
 }) {
+  const baseLen = baseline.length || 1;
+  const curLen = current.length || 1;
   const baseBins = buildHistogram(baseline);
   const curBins = buildHistogram(current, baseBins.length);
 
   const data = baseBins.map((b, i) => ({
     bin: b.binStart.toFixed(0),
-    baseline: (b.count / baseline.length) * 100,
-    current: (curBins[i].count / current.length) * 100,
+    baseline: Number(((b.count / baseLen) * 100).toFixed(1)),
+    current: Number(((curBins[i].count / curLen) * 100).toFixed(1)),
   }));
 
   return (
-    <ResponsiveContainer width="100%" height={220}>
-      <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-        <CartesianGrid stroke="rgba(57,255,106,0.08)" />
-        <XAxis dataKey="bin" stroke="#39ff6a" tick={{ fill: "#39ff6a", fontSize: 10 }} />
-        <YAxis stroke="#39ff6a" tick={{ fill: "#39ff6a", fontSize: 10 }} unit="%" />
+    <ResponsiveContainer width="100%" height={240}>
+      <BarChart data={data} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+        <CartesianGrid stroke="rgba(66,74,65,0.25)" strokeDasharray="3 3" />
+        <XAxis dataKey="bin" stroke="#70786e" tick={{ fill: "#a5ada3", fontSize: 10 }} />
+        <YAxis stroke="#70786e" tick={{ fill: "#a5ada3", fontSize: 10 }} unit="%" />
         <Tooltip
           contentStyle={{
-            background: "#0a100a",
-            border: "1px solid rgba(57,255,106,0.3)",
+            background: "#151b15",
+            border: "1px solid #424a41",
+            borderRadius: "6px",
             fontSize: 12,
+            color: "#e0e8dc",
           }}
+          labelStyle={{ color: "#4ae176", fontWeight: 600 }}
         />
-        <Legend wrapperStyle={{ fontSize: 11 }} />
-        <Bar dataKey="baseline" name="Baseline" fill="#1f8f3e" />
-        <Bar dataKey="current" name="Current Batch" fill="#ffb627" />
+        <Legend wrapperStyle={{ fontSize: 11, fontFamily: "var(--font-sans)", paddingTop: 8 }} />
+        <Bar dataKey="baseline" name="Baseline Distribution" fill="#22c55e" radius={[3, 3, 0, 0]} />
+        <Bar dataKey="current" name="Current Batch" fill="#f59e0b" radius={[3, 3, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

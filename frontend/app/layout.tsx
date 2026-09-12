@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import "./globals.css";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 export const metadata: Metadata = {
-  title: "DriftWatch — AI Drift Monitoring",
-  description: "Model drift detection and reliability monitoring dashboard",
+  title: "DriftWatch — Production ML Observability & Drift Detection",
+  description: "Real-time model monitoring, feature drift detection, and reliability engineering platform for production ML systems.",
 };
 
 export default function RootLayout({
@@ -11,7 +12,9 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ProtectedRoute>{children}</ProtectedRoute>
+      </body>
     </html>
   );
 }

@@ -1,4 +1,15 @@
 services:
+  mongodb:
+    image: mongo:7.0
+    container_name: driftwatch_mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=driftwatch_db
+    volumes:
+      - mongodb_data:/data/db
+
   backend:
     build:
       context: ./backend
@@ -10,7 +21,10 @@ services:
       - backend_models:/app/models
     environment:
       - PORT=8000
-      - DATABASE_PATH=/app/data/driftwatch.db
+      - MONGO_URI=mongodb://mongodb:27017
+      - JWT_SECRET=change_this_secret
+    depends_on:
+      - mongodb
 
   frontend:
     build:
@@ -26,5 +40,6 @@ services:
       - PORT=3000
 
 volumes:
+  mongodb_data:
   backend_data:
   backend_models:

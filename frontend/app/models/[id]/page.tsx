@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -12,7 +12,8 @@ import {
   PendingBatch,
   DriftRunDetail,
 } from "@/lib/api";
-import { SeverityTag, StatBlock } from "@/components/ui";
+import { AppNavbar } from "@/components/Navbar";
+import { SeverityTag, StatBlock, ErrorBanner, LoadingSpinner } from "@/components/ui";
 import { DriftTrendChart, AccuracyTrendChart } from "@/components/DriftCharts";
 import { DistributionChart } from "@/components/DistributionChart";
 
@@ -58,7 +59,7 @@ export default function ModelDashboard() {
     refreshAll();
   }, [refreshAll]);
 
-  // Handle auto-selection of latest run and its first feature
+  // Auto-selection of latest run and its first feature
   useEffect(() => {
     if (runs.length === 0) {
       setSelectedRun(null);
@@ -70,7 +71,6 @@ export default function ModelDashboard() {
     api.driftRunDetail(id, latest.id).then((detail) => {
       setSelectedRun(detail);
       if (model && model.feature_schema.length > 0) {
-        // preserve selection if still in schema, else pick first
         if (!selectedFeature || !model.feature_schema.includes(selectedFeature)) {
           setSelectedFeature(model.feature_schema[0]);
         }
@@ -78,7 +78,7 @@ export default function ModelDashboard() {
     });
   }, [runs, id, model]);
 
-  // Load distribution when run or feature selection changes
+  // Load distribution when run or feature changes
   useEffect(() => {
     if (!selectedRun || !selectedFeature) return;
     api.distribution(id, selectedRun.batch_name, selectedFeature)
@@ -97,7 +97,6 @@ export default function ModelDashboard() {
       formData.append("chunk_size", chunkSize.toString());
       await api.uploadBatch(id, formData);
       setFile(null);
-      // Reset input element
       const fileInput = document.getElementById("batch-file-input") as HTMLInputElement;
       if (fileInput) fileInput.value = "";
       await refreshAll();
@@ -156,19 +155,22 @@ export default function ModelDashboard() {
 
   if (!model) {
     return (
-      <main className="min-h-screen flex items-center justify-center p-8">
-        <div className="panel p-6 text-center">
+      <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+        <AppNavbar />
+        <main style={{ maxWidth: 640, margin: "100px auto", padding: 24 }}>
           {errorMessage ? (
-            <>
-              <div className="text-xl text-[var(--danger)] mb-2 glow-text">▓ ERROR LOADING MODEL</div>
-              <p className="text-xs opacity-70 mb-4">{errorMessage}</p>
-              <Link href="/models" className="text-xs underline hover:opacity-100">Back to Registry</Link>
-            </>
+            <div className="card" style={{ padding: 32, textAlign: "center" }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "var(--red)", marginBottom: 8 }}>Error Loading Model</div>
+              <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 20 }}>{errorMessage}</p>
+              <Link href="/models" className="btn btn-outline" style={{ fontSize: 12 }}>
+                ← Back to Registry
+              </Link>
+            </div>
           ) : (
-            <div className="text-sm blink">LOADING MODEL DATA...</div>
+            <LoadingSpinner text="Loading model telemetry..." />
           )}
-        </div>
-      </main>
+        </main>
+      </div>
     );
   }
 
@@ -178,325 +180,498 @@ export default function ModelDashboard() {
   const isBlocked = model.status === "blocked_pending_retrain";
 
   return (
-    <main className="min-h-screen p-6 max-w-7xl mx-auto">
-      <header className="flex items-center justify-between mb-4 pb-4 border-b" style={{ borderColor: "var(--border-dim)" }}>
-        <div>
-          <div className="text-xs opacity-50 flex items-center gap-2 mb-1">
-            <Link href="/models" className="hover:underline text-[var(--phosphor)]">← BACK TO REGISTRY</Link>
-            <span>//</span>
-            <span>MODEL ID: #{model.id}</span>
-          </div>
-          <h1 className="text-2xl font-extrabold glow-text tracking-tight uppercase">
-            {model.name}<span className="blink">_</span>
-          </h1>
-          <p className="text-xs opacity-50">{model.category}</p>
-        </div>
-        <div className="flex items-center gap-3 text-xs">
-          <span className="opacity-40">MODEL VERSION v{activeVersion?.version ?? 1}</span>
-          <button
-            onClick={handleDelete}
-            className="px-2 py-1 text-[10px] border border-red-900 text-red-500 hover:bg-[rgba(239,68,68,0.08)] transition"
-          >
-            [X] DELETE MODEL
-          </button>
-        </div>
-      </header>
+    <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+      <AppNavbar />
 
-      {/* Blocked state banner */}
-      {isBlocked && (
-        <div className="panel border-[var(--danger)] p-4 mb-6 flex items-center justify-between flex-wrap gap-4" style={{ background: "rgba(255,65,54,0.06)", boxShadow: "0 0 10px rgba(255,65,54,0.1) inset" }}>
-          <div>
-            <div className="text-sm font-bold text-[var(--danger)] glow-text animate-pulse mb-1">
-              ▓ SYSTEM BLOCKED: SEVERE DRIFT DETECTED
-            </div>
-            <p className="text-xs opacity-80 max-w-2xl">
-              Model performance is compromised. Automated processing pipeline is currently gated. Please trigger simulated retraining to redeploy weights and restore service.
-            </p>
+      <main style={{ maxWidth: 1400, margin: "0 auto", padding: "24px 20px" }}>
+        {/* Breadcrumb & Navigation */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--text-muted)" }}>
+            <Link href="/models" style={{ color: "var(--green)", textDecoration: "none" }}>
+              ← Registry
+            </Link>
+            <span>/</span>
+            <span>Model #{model.id}</span>
           </div>
-          <div className="flex gap-2">
+
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span className="badge badge-muted">
+              v{activeVersion?.version ?? 1} {activeVersion?.is_active ? "· Active" : ""}
+            </span>
             <button
-              onClick={handleRetrain}
-              disabled={retraining}
-              className="px-4 py-2 text-xs font-bold border border-[var(--amber)] text-[var(--amber)] hover:bg-[rgba(255,182,39,0.08)] transition"
+              onClick={handleDelete}
+              className="btn btn-danger"
+              style={{ fontSize: 12, padding: "5px 10px" }}
             >
-              {retraining ? "DEPLOYING RETRAIN..." : "⟲ RETRAIN MODEL NOW"}
+              Delete Model
             </button>
           </div>
         </div>
-      )}
 
-      {errorMessage && (
-        <div className="panel border-red-500 p-3 mb-6 text-xs text-red-400 bg-black/40">
-          <span className="font-bold">SYSTEM ERROR:</span> {errorMessage}
-        </div>
-      )}
-
-      {/* Summary blocks */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatBlock
-          label="Overall Feature PSI"
-          value={latestRun?.overall_psi ? latestRun.overall_psi.toFixed(4) : "—"}
-          severity={latestRun?.overall_severity}
-          sublabel={latestRun ? `Top: ${latestRun.top_drifted_feature}` : "No runs processed"}
-        />
-        <StatBlock
-          label="Prediction Drift"
-          value={latestRun?.prediction_psi ? latestRun.prediction_psi.toFixed(4) : "—"}
-          severity={latestRun?.prediction_severity}
-          sublabel="vs baseline output"
-        />
-        <StatBlock
-          label="Accuracy"
-          value={latestRun?.accuracy ? `${(latestRun.accuracy * 100).toFixed(1)}%` : "—"}
-          severity={latestRun?.accuracy && latestRun.accuracy < 0.85 ? "severe" : "none"}
-          sublabel="on latest batch"
-        />
-        <StatBlock
-          label="Active Alerts"
-          value={unacknowledged.length}
-          severity={unacknowledged.length > 0 ? "severe" : "none"}
-          sublabel={`${alerts.length} total alerts`}
-        />
-      </div>
-
-      {/* Control console panel */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        {/* Dataset file chunking upload form */}
-        <div className="panel p-4">
-          <h2 className="text-xs font-bold mb-3 opacity-60 tracking-wider">▲ UPLOAD AND CHUNK DATASTREAM</h2>
-          <form onSubmit={handleUpload} className="space-y-3 text-xs">
-            <div>
-              <label className="block mb-1 opacity-60">Production File (.CSV / .XLSX):</label>
-              <input
-                id="batch-file-input"
-                type="file"
-                accept=".csv, .xls, .xlsx"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-                required
-                className="w-full bg-black border border-[var(--border-dim)] p-2 text-xs"
-                style={{ color: "var(--phosphor)" }}
-              />
+        {/* Model Header Title */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24, paddingBottom: 16, borderBottom: "1px solid var(--border)", flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+              <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
+                {model.name}
+              </h1>
+              {isBlocked ? (
+                <span className="badge badge-red">
+                  <span className="dot dot-red pulse" style={{ width: 6, height: 6 }} />
+                  Blocked
+                </span>
+              ) : (
+                <span className="badge badge-green">
+                  <span className="dot dot-green" style={{ width: 6, height: 6 }} />
+                  Healthy
+                </span>
+              )}
             </div>
-            <div className="flex gap-4 items-center">
-              <div className="flex-1">
-                <label className="block mb-1 opacity-60">Chunk Size (Rows/Batch):</label>
+            <div style={{ display: "flex", gap: 16, fontSize: 12, color: "var(--text-muted)" }}>
+              <span>Category: <strong style={{ color: "var(--text-secondary)" }}>{model.category}</strong></span>
+              <span>•</span>
+              <span>Thresholds: <strong style={{ color: "var(--text-secondary)" }}>{model.threshold_moderate} (Mod) / {model.threshold_severe} (Sev)</strong></span>
+            </div>
+          </div>
+        </div>
+
+        {/* Blocked State Banner */}
+        {isBlocked && (
+          <div
+            style={{
+              background: "rgba(239,68,68,0.08)",
+              border: "1px solid rgba(239,68,68,0.35)",
+              borderRadius: 6,
+              padding: "16px 20px",
+              marginBottom: 24,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 16,
+            }}
+          >
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700, color: "var(--red)", marginBottom: 4 }}>
+                <span className="dot dot-red pulse" style={{ width: 8, height: 8 }} />
+                System Blocked: Severe Drift Detected
+              </div>
+              <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0, maxWidth: 800 }}>
+                Automated ingestion pipeline is currently gated to prevent degraded inferences. Deploy a retrained model version to restore standard operating status.
+              </p>
+            </div>
+            <button
+              onClick={handleRetrain}
+              disabled={retraining}
+              className="btn btn-amber"
+              style={{ fontWeight: 600, fontSize: 13, padding: "8px 18px" }}
+            >
+              {retraining ? "Retraining Model..." : "⟲ Retrain Model Now"}
+            </button>
+          </div>
+        )}
+
+        {errorMessage && <ErrorBanner message={errorMessage} />}
+
+        {/* 4 Stat KPI Blocks */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 24 }}>
+          <StatBlock
+            label="Overall Feature PSI"
+            value={latestRun?.overall_psi ? latestRun.overall_psi.toFixed(4) : "—"}
+            severity={latestRun?.overall_severity}
+            sublabel={latestRun ? `Top: ${latestRun.top_drifted_feature}` : "No runs evaluated"}
+          />
+          <StatBlock
+            label="Prediction Drift (PSI)"
+            value={latestRun?.prediction_psi ? latestRun.prediction_psi.toFixed(4) : "—"}
+            severity={latestRun?.prediction_severity}
+            sublabel="vs baseline distribution"
+          />
+          <StatBlock
+            label="Latest Accuracy"
+            value={latestRun?.accuracy ? `${(latestRun.accuracy * 100).toFixed(1)}%` : "—"}
+            severity={latestRun?.accuracy && latestRun.accuracy < 0.85 ? "severe" : "none"}
+            sublabel="on latest batch"
+          />
+          <StatBlock
+            label="Active Alerts"
+            value={unacknowledged.length}
+            severity={unacknowledged.length > 0 ? "severe" : "none"}
+            sublabel={`${alerts.length} total alerts recorded`}
+          />
+        </div>
+
+        {/* Control Console Panel (2-column) */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 16, marginBottom: 24 }}>
+          {/* Column 1: Upload Data */}
+          <div className="card" style={{ padding: 20 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 14 }}>
+              Upload &amp; Chunk Datastream
+            </div>
+            <form onSubmit={handleUpload} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div>
+                <label className="label" style={{ marginBottom: 4 }}>Production Inferences (.CSV / .XLSX)</label>
                 <input
-                  type="number"
-                  min="10"
-                  max="5000"
-                  value={chunkSize}
-                  onChange={(e) => setChunkSize(Number(e.target.value))}
+                  id="batch-file-input"
+                  type="file"
+                  accept=".csv, .xls, .xlsx"
+                  onChange={(e) => setFile(e.target.files?.[0] || null)}
                   required
-                  className="w-full bg-black border border-[var(--border-dim)] p-2 text-xs"
-                  style={{ color: "var(--phosphor)" }}
+                  className="input"
+                  style={{ padding: 6, fontSize: 12 }}
                 />
               </div>
-              <div className="pt-4">
+
+              <div style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
+                <div style={{ flex: 1 }}>
+                  <label className="label" style={{ marginBottom: 4 }}>Chunk Size (Rows/Batch)</label>
+                  <input
+                    type="number"
+                    min="10"
+                    max="5000"
+                    value={chunkSize}
+                    onChange={(e) => setChunkSize(Number(e.target.value))}
+                    required
+                    className="input"
+                  />
+                </div>
                 <button
                   type="submit"
                   disabled={uploading || !file}
-                  className="px-4 py-2 font-bold border border-[var(--phosphor)] glow-border hover:bg-[rgba(57,255,106,0.08)] disabled:opacity-30 transition"
+                  className="btn btn-primary"
+                  style={{ height: 38 }}
                 >
-                  {uploading ? "CHUNK-SLICING..." : "⚡ QUEUE DATASTREAM"}
+                  {uploading ? "Chunking..." : "⚡ Queue Datastream"}
                 </button>
               </div>
+            </form>
+          </div>
+
+          {/* Column 2: Ingestion Controller */}
+          <div className="card" style={{ padding: 20, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 14 }}>
+                Ingestion Controller
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 13, marginBottom: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>
+                  <span style={{ color: "var(--text-muted)" }}>Pending Queue</span>
+                  <span style={{ fontWeight: 600, color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
+                    {pendingBatches.length} batch{pendingBatches.length === 1 ? "" : "es"} queued
+                  </span>
+                </div>
+                {pendingBatches.length > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 4 }}>
+                    <span style={{ color: "var(--text-muted)" }}>Next Batch</span>
+                    <span style={{ color: "var(--amber)", fontFamily: "var(--font-mono)", fontWeight: 500 }}>
+                      {pendingBatches[0].batch_name} ({pendingBatches[0].row_count} records)
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
-          </form>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 12 }}>
+              <button
+                onClick={handleProcessBatch}
+                disabled={pendingBatches.length === 0 || processing || (isBlocked && !forceIngest)}
+                className="btn btn-primary"
+                style={{ flex: 1, justifyContent: "center", height: 38 }}
+              >
+                {processing ? "Evaluating Drift..." : pendingBatches.length > 0 ? `▶ Run ${pendingBatches[0].batch_name}` : "Queue is Empty"}
+              </button>
+
+              {isBlocked && (
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--red)", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={forceIngest}
+                    onChange={(e) => setForceIngest(e.target.checked)}
+                    style={{ accentColor: "var(--red)" }}
+                  />
+                  <span>Force Bypass Gate</span>
+                </label>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Process Next Batch controller */}
-        <div className="panel p-4 flex flex-col justify-between">
-          <div>
-            <h2 className="text-xs font-bold mb-3 opacity-60 tracking-wider">▶ INGESTION CONTROLLER</h2>
-            <div className="text-xs space-y-2 mb-4">
-              <div className="flex justify-between border-b border-[var(--border-dim)] pb-1.5">
-                <span className="opacity-60">Pending Batches:</span>
-                <span className="font-bold">{pendingBatches.length} batches queued</span>
+        {/* Analytics Section & Sidebar Grid */}
+        <div className="analytics-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 20 }}>
+          {/* Left Column: Visual Analytics */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            {/* Chart 1: Drift Trend */}
+            <div className="card" style={{ padding: 20 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
+                    Population Stability Index (PSI) Trend
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                    Rolling batch drift evaluation against reference baseline
+                  </div>
+                </div>
               </div>
-              {pendingBatches.length > 0 && (
-                <div className="flex justify-between">
-                  <span className="opacity-60">Next Chunk:</span>
-                  <span className="opacity-80 text-amber-400">
-                    {pendingBatches[0].batch_name} ({pendingBatches[0].row_count} rows)
-                  </span>
+              <DriftTrendChart runs={runs} thresholdSevere={model.threshold_severe} />
+            </div>
+
+            {/* Chart 2: Accuracy */}
+            <div className="card" style={{ padding: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 4 }}>
+                Model Accuracy Over Time
+              </div>
+              <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 16 }}>
+                Inference performance against minimum 85% SLA floor
+              </div>
+              <AccuracyTrendChart runs={runs} />
+            </div>
+
+            {/* Chart 3: Distribution Comparison */}
+            <div className="card" style={{ padding: 20 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
+                    Feature Distribution: Baseline vs Current
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                    Histogram comparison for selected feature vector
+                  </div>
+                </div>
+                <select
+                  value={selectedFeature}
+                  onChange={(e) => setSelectedFeature(e.target.value)}
+                  className="input"
+                  style={{ width: "auto", minWidth: 160, padding: "5px 10px", fontSize: 12 }}
+                >
+                  {model.feature_schema.map((f) => (
+                    <option key={f} value={f}>{f}</option>
+                  ))}
+                </select>
+              </div>
+
+              {distribution ? (
+                <DistributionChart baseline={distribution.baseline_values} current={distribution.current_values} />
+              ) : (
+                <div style={{ height: 180, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "var(--text-muted)" }}>
+                  Select a run and feature to view comparative distributions
+                </div>
+              )}
+
+              {selectedRun && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12, marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--border)", fontSize: 12 }}>
+                  {Object.entries(selectedRun.feature_drift)
+                    .filter(([f]) => f === selectedFeature)
+                    .map(([f, d]) => (
+                      <div key={f} style={{ display: "contents" }}>
+                        <div>
+                          <div style={{ color: "var(--text-muted)", fontSize: 11 }}>PSI Score</div>
+                          <div style={{ fontFamily: "var(--font-mono)", fontWeight: 600, color: "var(--green-bright)" }}>
+                            {d.psi.toFixed(4)}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ color: "var(--text-muted)", fontSize: 11 }}>JS Divergence</div>
+                          <div style={{ fontFamily: "var(--font-mono)", fontWeight: 600, color: "var(--text-primary)" }}>
+                            {d.js_divergence.toFixed(4)}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ color: "var(--text-muted)", fontSize: 11 }}>KS p-value</div>
+                          <div style={{ fontFamily: "var(--font-mono)", fontWeight: 600, color: "var(--text-primary)" }}>
+                            {d.ks_p_value.toFixed(6)}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ color: "var(--text-muted)", fontSize: 11, marginBottom: 2 }}>Severity</div>
+                          <SeverityTag severity={d.severity} />
+                        </div>
+                      </div>
+                    ))}
                 </div>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-3 mt-4">
-            <button
-              onClick={handleProcessBatch}
-              disabled={pendingBatches.length === 0 || processing || (isBlocked && !forceIngest)}
-              className="flex-1 py-2.5 font-bold border glow-border text-sm disabled:opacity-30 hover:bg-[rgba(57,255,106,0.08)] transition"
-              style={{ borderColor: "var(--phosphor-dim)" }}
-            >
-              {processing ? "CALCULATING DRIFT..." : pendingBatches.length > 0 ? `▶ RUN ${pendingBatches[0].batch_name.toUpperCase()}` : "QUEUE IS EMPTY"}
-            </button>
-
-            {isBlocked && (
-              <label className="flex items-center gap-1.5 text-xs text-[var(--danger)] font-bold cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={forceIngest}
-                  onChange={(e) => setForceIngest(e.target.checked)}
-                  className="accent-red-600"
-                />
-                FORCE BYPASS
-              </label>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Main Charts & Breakdown Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="panel p-4">
-            <h2 className="text-sm font-bold mb-3 opacity-80 tracking-wide">DRIFT TREND // PSI OVER TIME</h2>
-            <DriftTrendChart runs={runs} thresholdSevere={model.threshold_severe} />
-          </div>
-          <div className="panel p-4">
-            <h2 className="text-sm font-bold mb-3 opacity-80 tracking-wide">MODEL ACCURACY OVER TIME</h2>
-            <AccuracyTrendChart runs={runs} />
-          </div>
-          <div className="panel p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-bold opacity-80 tracking-wide">FEATURE DISTRIBUTION // BASELINE VS CURRENT</h2>
-              <select
-                value={selectedFeature}
-                onChange={(e) => setSelectedFeature(e.target.value)}
-                className="bg-black border text-xs px-2 py-1"
-                style={{ borderColor: "var(--border-dim)", color: "var(--phosphor)" }}
-              >
-                {model.feature_schema.map((f) => (
-                  <option key={f} value={f}>{f}</option>
+          {/* Right Column: Operational Sidebar */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            {/* Run Logs */}
+            <div className="card" style={{ padding: 18 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 12 }}>
+                Drift Run Logs
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 220, overflowY: "auto" }}>
+                {runs.length === 0 && (
+                  <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: 16 }}>
+                    No drift evaluation runs recorded
+                  </div>
+                )}
+                {runs.slice().reverse().map((run) => (
+                  <div
+                    key={run.id}
+                    onClick={() => api.driftRunDetail(id, run.id).then(setSelectedRun)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "8px 10px",
+                      borderRadius: 4,
+                      border: "1px solid",
+                      borderColor: run.id === selectedRun?.id ? "var(--green)" : "var(--border)",
+                      background: run.id === selectedRun?.id ? "var(--surface-raised)" : "transparent",
+                      cursor: "pointer",
+                      fontSize: 12,
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 600, color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
+                        {run.batch_name}
+                      </div>
+                      <div style={{ color: "var(--text-muted)", fontSize: 11 }}>
+                        PSI: {run.overall_psi.toFixed(4)}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <SeverityTag severity={run.overall_severity} />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(api.getReportUrl(id, run.id));
+                        }}
+                        className="btn btn-outline"
+                        style={{ fontSize: 10, padding: "3px 7px" }}
+                        title="Download PDF Audit Report"
+                      >
+                        PDF
+                      </button>
+                    </div>
+                  </div>
                 ))}
-              </select>
-            </div>
-            {distribution ? (
-              <DistributionChart baseline={distribution.baseline_values} current={distribution.current_values} />
-            ) : (
-              <div className="h-[220px] flex items-center justify-center text-xs opacity-40">No distribution values loaded</div>
-            )}
-            {selectedRun && (
-              <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
-                {Object.entries(selectedRun.feature_drift)
-                  .filter(([f]) => f === selectedFeature)
-                  .map(([f, d]) => (
-                    <div key={f} className="contents">
-                      <div className="opacity-60">PSI: <span className="font-bold" style={{ color: "var(--phosphor-bright)" }}>{d.psi.toFixed(4)}</span></div>
-                      <div className="opacity-60">JS Divergence: <span className="font-bold">{d.js_divergence.toFixed(4)}</span></div>
-                      <div className="opacity-60">KS p-value: <span className="font-bold">{d.ks_p_value.toFixed(6)}</span></div>
-                      <div className="opacity-60">Severity: <SeverityTag severity={d.severity} /></div>
-                    </div>
-                  ))}
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right side panels */}
-        <div className="space-y-6">
-          {/* Historical list with PDF buttons */}
-          <div className="panel p-4">
-            <h2 className="text-sm font-bold mb-3 opacity-80 tracking-wide">DRIFT RUN LOGS</h2>
-            <div className="space-y-2 max-h-56 overflow-y-auto text-xs pr-1">
-              {runs.length === 0 && <div className="opacity-40">No runs logged yet.</div>}
-              {runs.slice().reverse().map((run) => (
-                <div
-                  key={run.id}
-                  onClick={() => api.driftRunDetail(id, run.id).then(setSelectedRun)}
-                  className="flex items-center justify-between p-2 border border-[var(--border-dim)] hover:bg-[rgba(57,255,106,0.06)] cursor-pointer transition"
-                  style={{ background: run.id === selectedRun?.id ? "rgba(57,255,106,0.08)" : "transparent" }}
-                >
-                  <div>
-                    <div className="font-bold text-white uppercase">{run.batch_name}</div>
-                    <div className="opacity-50 text-[10px]">PSI: {run.overall_psi.toFixed(4)}</div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <SeverityTag severity={run.overall_severity} />
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        window.open(api.getReportUrl(id, run.id));
-                      }}
-                      className="px-2 py-1 text-[10px] font-bold border border-green-700 hover:bg-[rgba(57,255,106,0.15)] transition"
-                      style={{ color: "var(--phosphor-bright)" }}
-                    >
-                      PDF
-                    </button>
-                  </div>
-                </div>
-              ))}
             </div>
-          </div>
 
-          <div className="panel p-4">
-            <h2 className="text-sm font-bold mb-3 opacity-80 tracking-wide">ALERT FEED</h2>
-            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-              {alerts.length === 0 && <div className="text-xs opacity-40">No alerts yet.</div>}
-              {alerts.map((a) => (
-                <div
-                  key={a.id}
-                  className="border-l-2 pl-2 py-1 text-xs"
-                  style={{ borderColor: a.acknowledged ? "var(--phosphor-dim)" : "var(--danger)", opacity: a.acknowledged ? 0.4 : 1 }}
-                >
-                  <div className="flex justify-between items-start gap-2">
-                    <span className="opacity-60 font-bold">[{a.batch_name.toUpperCase()}]</span>
-                    <SeverityTag severity={a.severity} />
-                  </div>
-                  <div className="mt-1">{a.message}</div>
-                  {!a.acknowledged && (
-                    <button
-                      onClick={() => handleAcknowledge(a.id)}
-                      className="text-xs underline opacity-60 hover:opacity-100 mt-1"
-                    >
-                      acknowledge
-                    </button>
-                  )}
+            {/* Alert Feed */}
+            <div className="card" style={{ padding: 18 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
+                  Alert Feed
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {selectedRun && (
-            <div className="panel p-4">
-              <h2 className="text-sm font-bold mb-3 opacity-80 tracking-wide">FEATURE BREAKDOWN</h2>
-              <div className="space-y-1 text-xs">
-                {Object.entries(selectedRun.feature_drift)
-                  .sort((a, b) => b[1].psi - a[1].psi)
-                  .map(([f, d]) => (
-                    <div
-                      key={f}
-                      onClick={() => setSelectedFeature(f)}
-                      className="flex justify-between items-center py-1 px-1 cursor-pointer hover:bg-[rgba(57,255,106,0.06)]"
-                      style={{ background: f === selectedFeature ? "rgba(57,255,106,0.08)" : "transparent" }}
-                    >
-                      <span>{f}</span>
-                      <span className="flex items-center gap-2">
-                        <span className="opacity-60">{d.psi.toFixed(4)}</span>
-                        <SeverityTag severity={d.severity} />
+                <span className="badge badge-muted">{unacknowledged.length} pending</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 220, overflowY: "auto" }}>
+                {alerts.length === 0 && (
+                  <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: 16 }}>
+                    No alerts generated
+                  </div>
+                )}
+                {alerts.map((a) => (
+                  <div
+                    key={a.id}
+                    style={{
+                      padding: "8px 10px",
+                      borderRadius: 4,
+                      borderLeft: `3px solid ${a.acknowledged ? "var(--border)" : "var(--red)"}`,
+                      background: a.acknowledged ? "transparent" : "var(--surface-raised)",
+                      opacity: a.acknowledged ? 0.5 : 1,
+                      fontSize: 12,
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
+                      <span style={{ fontWeight: 600, color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>
+                        [{a.batch_name}]
                       </span>
+                      <SeverityTag severity={a.severity} />
                     </div>
-                  ))}
+                    <div style={{ color: "var(--text-primary)", fontSize: 11, marginBottom: 4 }}>{a.message}</div>
+                    {!a.acknowledged && (
+                      <button
+                        onClick={() => handleAcknowledge(a.id)}
+                        className="btn btn-ghost"
+                        style={{ fontSize: 11, padding: "2px 6px", color: "var(--text-muted)" }}
+                      >
+                        ✓ Acknowledge
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
-          )}
 
-          <div className="panel p-4">
-            <h2 className="text-sm font-bold mb-3 opacity-80 tracking-wide">MODEL VERSION HISTORY</h2>
-            <div className="space-y-2 text-xs">
-              {versions.map((v) => (
-                <div key={v.id} className="flex justify-between border-b pb-1" style={{ borderColor: "var(--border-dim)" }}>
-                  <span>v{v.version} {v.is_active && <span style={{ color: "var(--phosphor-bright)" }}>● active</span>}</span>
-                  <span className="opacity-60">acc {v.accuracy ? v.accuracy.toFixed(4) : "—"} / auc {v.auc ? v.auc.toFixed(4) : "—"}</span>
+            {/* Feature Drift Ranker */}
+            {selectedRun && (
+              <div className="card" style={{ padding: 18 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 12 }}>
+                  Feature Drift Ranker
                 </div>
-              ))}
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12 }}>
+                  {Object.entries(selectedRun.feature_drift)
+                    .sort((a, b) => b[1].psi - a[1].psi)
+                    .map(([f, d]) => (
+                      <div
+                        key={f}
+                        onClick={() => setSelectedFeature(f)}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "6px 8px",
+                          borderRadius: 4,
+                          cursor: "pointer",
+                          background: f === selectedFeature ? "var(--surface-raised)" : "transparent",
+                          border: f === selectedFeature ? "1px solid var(--border)" : "1px solid transparent",
+                        }}
+                      >
+                        <span style={{ color: f === selectedFeature ? "var(--green)" : "var(--text-secondary)" }}>
+                          {f}
+                        </span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-muted)" }}>
+                            {d.psi.toFixed(4)}
+                          </span>
+                          <SeverityTag severity={d.severity} />
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Version Lineage */}
+            <div className="card" style={{ padding: 18 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 12 }}>
+                Model Lineage &amp; Versions
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 12 }}>
+                {versions.map((v) => (
+                  <div
+                    key={v.id}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      borderBottom: "1px solid var(--border)",
+                      paddingBottom: 6,
+                    }}
+                  >
+                    <div>
+                      <span style={{ fontWeight: 600, color: "var(--text-primary)", marginRight: 6 }}>
+                        v{v.version}
+                      </span>
+                      {v.is_active && (
+                        <span className="badge badge-green" style={{ fontSize: 10, padding: "1px 5px" }}>
+                          Active
+                        </span>
+                      )}
+                    </div>
+                    <span style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: 11 }}>
+                      acc {v.accuracy ? (v.accuracy * 100).toFixed(1) + "%" : "—"} · auc {v.auc ? v.auc.toFixed(3) : "—"}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

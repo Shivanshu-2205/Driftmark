@@ -90,8 +90,29 @@ export interface ModelDetailData {
   pending_batches: PendingBatch[];
 }
 
+function getToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("driftwatch_token");
+}
+
 async function fetchJson<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, options);
+  const token = getToken();
+  const opts: RequestInit = {
+    ...options,
+    credentials: "include",
+    headers: {
+      ...(options?.headers || {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  };
+  const res = await fetch(`${API_BASE}${path}`, opts);
+  if (res.status === 401) {
+    // Token expired or invalid – redirect to login
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("driftwatch_token");
+      window.location.href = "/auth/login";
+    }
+  }
   if (!res.ok) {
     let errorDetail = "";
     try {
@@ -102,6 +123,33 @@ async function fetchJson<T>(path: string, options?: RequestInit): Promise<T> {
   }
   return res.json();
 }
+
+export async function login(email: string, password: string): Promise<{ access_token: string }> {
+  const body = new URLSearchParams();
+  body.append("username", email);
+  body.append("password", password);
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: body.toString(),
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || "Login failed");
+  }
+  const data = await res.json();
+  if (data.access_token) {
+    localStorage.setItem("driftwatch_token", data.access_token);
+  }
+  return data;
+}
+
+export function logout() {
+  localStorage.removeItem("driftwatch_token");
+  window.location.href = "/auth/login";
+}
+
 
 export const api = {
   health: () => fetchJson<{ status: string }>("/"),
@@ -128,7 +176,10 @@ export const api = {
     ),
   driftRunDetail: (modelId: number, runId: number) =>
     fetchJson<DriftRunDetail>(`/models/${modelId}/drift-runs/${runId}`),
-  getReportUrl: (modelId: number, runId: number) =>
-    `${API_BASE}/models/${modelId}/drift-runs/${runId}/report`,
+  getReportUrl: (modelId: number, runId: number) => {
+    const token = getToken();
+    const tokenParam = token ? `?token=${encodeURIComponent(token)}` : "";
+    return `${API_BASE}/models/${modelId}/drift-runs/${runId}/report${tokenParam}`;
+  },
 };
 
